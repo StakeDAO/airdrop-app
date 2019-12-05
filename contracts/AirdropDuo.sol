@@ -136,14 +136,14 @@ contract AirdropDuo is AragonApp {
             if( airdrops[_id].awarded[recipient] )
                 continue;
 
-            airdrops[_id].awarded[recipient] = true;
-
             bytes32[] memory proof = extractProof(_proofs, marker, _proofLengths[i]);
             marker += _proofLengths[i]*32;
 
             bytes32 hash = keccak256(abi.encodePacked(recipient, _amount0s[i], _amount1s[i]));
             if( !validate(airdrops[_id].root, proof, hash) )
                 continue;
+
+            airdrops[_id].awarded[recipient] = true;
 
             tokenManager0.mint(recipient, _amount0s[i]);
             tokenManager1.mint(recipient, _amount1s[i]);
