@@ -39,16 +39,12 @@ function AwardsView({root, ipfsHash, awards}){
           <TableCell>
             <Text>Amount</Text>
           </TableCell>
-          <TableCell>
-            <Text>Amount</Text>
-          </TableCell>
         </TableRow>
         {awards.map((award,idx)=>(
           <TableRow key={idx}>
             {hasNameField && <TableCell><Text>{award.name}</Text></TableCell>}
             <TableCell><AddressField address={award.address} /></TableCell>
-            <TableCell><Text>{award.amount0}</Text></TableCell>
-            <TableCell><Text>{award.amount1}</Text></TableCell>
+            <TableCell><Text>{award.amount}</Text></TableCell>
           </TableRow>
         ))}
       </Table>

@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import "@aragon/os/contracts/apps/AragonApp.sol";
 import "@aragon/apps-token-manager/contracts/TokenManager.sol";
 
-contract AirdropDuo is AragonApp {
+contract Airdrop is AragonApp {
 
     struct Airdrop {
       bytes32 root;
@@ -13,12 +13,11 @@ contract AirdropDuo is AragonApp {
 
     /// Events
     event Start(uint id);
-    event Award(uint id, address recipient, uint amount0, uint amount1);
+    event Award(uint id, address recipient, uint amount);
 
     /// State
     mapping(uint => Airdrop) public airdrops;
-    TokenManager public tokenManager0;
-    TokenManager public tokenManager1;
+    TokenManager public tokenManager;
     uint public airdropsCount;
 
     /// ACL
@@ -28,11 +27,10 @@ contract AirdropDuo is AragonApp {
     string private constant ERROR_AWARDED = "AWARDED";
     string private constant ERROR_INVALID = "INVALID";
 
-    function initialize(address _tokenManager0, address _tokenManager1, bytes32 _root, string _dataURI) onlyInit public {
+    function initialize(address _tokenManager, bytes32 _root, string _dataURI) onlyInit public {
         initialized();
 
-        tokenManager0 = TokenManager(_tokenManager0);
-        tokenManager1 = TokenManager(_tokenManager1);
+        tokenManager = TokenManager(_tokenManager);
 
         if(_root != bytes32(0) && bytes(_dataURI).length != 0)
           _start(_root, _dataURI);
@@ -57,39 +55,35 @@ contract AirdropDuo is AragonApp {
      * @notice Award from airdrop
      * @param _id Airdrop id
      * @param _recipient Recepient of award
-     * @param _amount0 The token0 amount
-     * @param _amount1 The token1 amount
+     * @param _amount The token amount
      * @param _proof Merkle proof to correspond to data supplied
      */
-    function award(uint _id, address _recipient, uint256 _amount0, uint256 _amount1, bytes32[] _proof) public {
+    function award(uint _id, address _recipient, uint256 _amount, bytes32[] _proof) public {
         Airdrop storage airdrop = airdrops[_id];
 
-        bytes32 hash = keccak256(abi.encodePacked(_recipient, _amount0, _amount1));
+        bytes32 hash = keccak256(abi.encodePacked(_recipient, _amount));
         require( validate(airdrop.root, _proof, hash), ERROR_INVALID );
 
         require( !airdrops[_id].awarded[_recipient], ERROR_AWARDED );
 
         airdrops[_id].awarded[_recipient] = true;
 
-        tokenManager0.mint(_recipient, _amount0);
-        tokenManager1.mint(_recipient, _amount1);
+        tokenManager.mint(_recipient, _amount);
 
-        emit Award(_id, _recipient, _amount0, _amount1);
+        emit Award(_id, _recipient, _amount);
     }
 
     /**
      * @notice Award from airdrop
      * @param _ids Airdrop ids
      * @param _recipient Recepient of award
-     * @param _amount0s The token0 amounts
-     * @param _amount1s The token1 amounts
+     * @param _amounts The token amounts
      * @param _proofs Merkle proofs
      * @param _proofLengths Merkle proof lengths
      */
-    function awardFromMany(uint[] _ids, address _recipient, uint[] _amount0s, uint[] _amount1s, bytes _proofs, uint[] _proofLengths) public {
+    function awardFromMany(uint[] _ids, address _recipient, uint[] _amounts, bytes _proofs, uint[] _proofLengths) public {
 
-        uint totalAmount0;
-        uint totalAmount1;
+        uint totalAmount;
 
         uint marker = 32;
 
@@ -99,21 +93,19 @@ contract AirdropDuo is AragonApp {
             bytes32[] memory proof = extractProof(_proofs, marker, _proofLengths[i]);
             marker += _proofLengths[i]*32;
 
-            bytes32 hash = keccak256(abi.encodePacked(_recipient, _amount0s[i], _amount1s[i]));
+            bytes32 hash = keccak256(abi.encodePacked(_recipient, _amounts[i]));
             require( validate(airdrops[id].root, proof, hash), ERROR_INVALID );
 
             require( !airdrops[id].awarded[_recipient], ERROR_AWARDED );
 
             airdrops[id].awarded[_recipient] = true;
 
-            totalAmount0 += _amount0s[i];
-            totalAmount1 += _amount1s[i];
+            totalAmount += _amounts[i];
 
-            emit Award(id, _recipient, _amount0s[i], _amount1s[i]);
+            emit Award(id, _recipient, _amounts[i]);
         }
 
-        tokenManager0.mint(_recipient, totalAmount0);
-        tokenManager1.mint(_recipient, totalAmount1);
+        tokenManager.mint(_recipient, totalAmount);
 
     }
 
@@ -121,12 +113,11 @@ contract AirdropDuo is AragonApp {
      * @notice Award from airdrop
      * @param _id Airdrop ids
      * @param _recipients Recepients of award
-     * @param _amount0s The karma amount
-     * @param _amount1s The currency amount
+     * @param _amounts The token amounts
      * @param _proofs Merkle proofs
      * @param _proofLengths Merkle proof lengths
      */
-    function awardToMany(uint _id, address[] _recipients, uint[] _amount0s, uint[] _amount1s, bytes _proofs, uint[] _proofLengths) public {
+    function awardToMany(uint _id, address[] _recipients, uint[] _amounts, bytes _proofs, uint[] _proofLengths) public {
 
         uint marker = 32;
 
@@ -139,16 +130,15 @@ contract AirdropDuo is AragonApp {
             bytes32[] memory proof = extractProof(_proofs, marker, _proofLengths[i]);
             marker += _proofLengths[i]*32;
 
-            bytes32 hash = keccak256(abi.encodePacked(recipient, _amount0s[i], _amount1s[i]));
+            bytes32 hash = keccak256(abi.encodePacked(recipient, _amounts[i]));
             if( !validate(airdrops[_id].root, proof, hash) )
                 continue;
 
             airdrops[_id].awarded[recipient] = true;
 
-            tokenManager0.mint(recipient, _amount0s[i]);
-            tokenManager1.mint(recipient, _amount1s[i]);
+            tokenManager.mint(recipient, _amounts[i]);
 
-            emit Award(_id, recipient, _amount0s[i], _amount1s[i]);
+            emit Award(_id, recipient, _amounts[i]);
         }
 
     }

@@ -20,7 +20,7 @@ import "@aragon/apps-token-manager/contracts/TokenManager.sol";
 import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
 import "@daonuts/token/contracts/Token.sol";
 
-import "./AirdropDuo.sol";
+import "./Airdrop.sol";
 
 
 contract TemplateBase is APMNamehash {
@@ -66,49 +66,35 @@ contract Template is TemplateBase {
         ACL acl = ACL(dao.acl());
         acl.createPermission(this, dao, dao.APP_MANAGER_ROLE(), this);
 
-        bytes32 airdropDuoAppId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("airdrop-duo-app")));
+        bytes32 airdropAppId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("airdrop-app")));
         bytes32 tokenManagerAppId = apmNamehash("token-manager");
 
-        AirdropDuo airdrop = AirdropDuo(dao.newAppInstance(airdropDuoAppId, latestVersionAppBase(airdropDuoAppId)));
-        TokenManager contribManager = TokenManager(dao.newAppInstance(tokenManagerAppId, latestVersionAppBase(tokenManagerAppId)));
-        TokenManager currencyManager = TokenManager(dao.newAppInstance(tokenManagerAppId, latestVersionAppBase(tokenManagerAppId)));
+        Airdrop airdrop = Airdrop(dao.newAppInstance(airdropAppId, latestVersionAppBase(airdropAppId)));
+        TokenManager tokenManager = TokenManager(dao.newAppInstance(tokenManagerAppId, latestVersionAppBase(tokenManagerAppId)));
 
-        /* MiniMeToken contrib = tokenFactory.createCloneToken(MiniMeToken(0), 0, "Contrib", 18, "CONTRIB", false); */
-        Token contrib = new Token("Contrib", 18, "CONTRIB", false);
-        /* MiniMeToken currency = tokenFactory.createCloneToken(MiniMeToken(0), 0, "Currency", 18, "CURRENCY", true); */
-        Token currency = new Token("Currency", 18, "CURRENCY", true);
-        contrib.changeController(contribManager);
-        currency.changeController(currencyManager);
+        Token token = new Token("Token", 18, "TOKEN", false);
+        token.changeController(tokenManager);
 
         // Initialize apps
-        contribManager.initialize(MiniMeToken(contrib), false, 0);
-        emit InstalledApp(contribManager, tokenManagerAppId);
-        currencyManager.initialize(MiniMeToken(currency), true, 0);
-        emit InstalledApp(currencyManager, tokenManagerAppId);
-        bytes32 root = 0x3e2cfb838b2ad1503bf79a4391e990a014b1eaf20f5de80ac5e441b8ee6e90e4;
-        string memory dataURI = "ipfs:QmQJa54XQwEPeyPvUg2bCKZD6AK98hMB4zU4gU1EgpQG4P";
-        airdrop.initialize(contribManager, currencyManager, root, dataURI);
-        /* airdrop.initialize(contribManager, currencyManager, bytes32(0), ""); */
-        emit InstalledApp(airdrop, airdropDuoAppId);
+        tokenManager.initialize(MiniMeToken(token), false, 0);
+        emit InstalledApp(tokenManager, tokenManagerAppId);
+        /* bytes32 root = 0x3e2cfb838b2ad1503bf79a4391e990a014b1eaf20f5de80ac5e441b8ee6e90e4; */
+        /* string memory dataURI = "ipfs:QmQJa54XQwEPeyPvUg2bCKZD6AK98hMB4zU4gU1EgpQG4P"; */
+        /* airdrop.initialize(tokenManager, root, dataURI); */
+        airdrop.initialize(tokenManager, bytes32(0), "");
+        emit InstalledApp(airdrop, airdropAppId);
 
-        acl.createPermission(msg.sender, contribManager, contribManager.BURN_ROLE(), msg.sender);
-        acl.createPermission(msg.sender, currencyManager, currencyManager.BURN_ROLE(), msg.sender);
+        acl.createPermission(msg.sender, tokenManager, tokenManager.BURN_ROLE(), msg.sender);
         acl.createPermission(msg.sender, airdrop, airdrop.START_ROLE(), msg.sender);
-        acl.createPermission(this, contribManager, contribManager.MINT_ROLE(), this);
-        acl.createPermission(this, currencyManager, currencyManager.MINT_ROLE(), this);
+        acl.createPermission(this, tokenManager, tokenManager.MINT_ROLE(), this);
 
-        contribManager.mint(msg.sender, 100000 * 10**18); // Give 1 token to each holder
-        currencyManager.mint(msg.sender, 100000 * 10**18); // Give 1 token to each holder
+        tokenManager.mint(msg.sender, 100000 * 10**18); // Give 1 token to each holder
 
         // Clean up permissions
 
-        acl.grantPermission(airdrop, contribManager, contribManager.MINT_ROLE());
-        acl.revokePermission(this, contribManager, contribManager.MINT_ROLE());
-        acl.setPermissionManager(msg.sender, contribManager, contribManager.MINT_ROLE());
-
-        acl.grantPermission(airdrop, currencyManager, currencyManager.MINT_ROLE());
-        acl.revokePermission(this, currencyManager, currencyManager.MINT_ROLE());
-        acl.setPermissionManager(msg.sender, currencyManager, currencyManager.MINT_ROLE());
+        acl.grantPermission(airdrop, tokenManager, tokenManager.MINT_ROLE());
+        acl.revokePermission(this, tokenManager, tokenManager.MINT_ROLE());
+        acl.setPermissionManager(msg.sender, tokenManager, tokenManager.MINT_ROLE());
 
         acl.grantPermission(msg.sender, dao, dao.APP_MANAGER_ROLE());
         acl.revokePermission(this, dao, dao.APP_MANAGER_ROLE());

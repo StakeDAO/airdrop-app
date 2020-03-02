@@ -10,7 +10,6 @@ import merklize from './merklize'
 import ipfsClient from 'ipfs-http-client'
 import csv from 'csvtojson'
 import { isValidAddress } from 'ethereumjs-util'
-import { getPublicAddress as getPublicAddressTorus } from './torusUtils'
 
 function NewAirdrop({onBack}) {
   const { api } = useAragonApi()
@@ -20,8 +19,7 @@ function NewAirdrop({onBack}) {
   const [hash, setHash] = useState()
   const [ipfs, setIpfs] = useState()
   const [addressField, setAddressField] = useState()
-  const [amount0Field, setAmount0Field] = useState()
-  const [amount1Field, setAmount1Field] = useState()
+  const [amountField, setAmountField] = useState()
   const form = React.createRef();
 
   useEffect(()=>{
@@ -45,11 +43,7 @@ function NewAirdrop({onBack}) {
         let fields = Object.keys(awards[0])
         let amountFields = fields.filter(f=>!BigNumber(awards[0][f]).isNaN())
         if(amountFields.length > 0){
-          setAmount0Field( amountFields[0] )
-          if(amountFields.length > 1)
-            setAmount1Field( amountFields[1] )
-          else
-            setAmount1Field( amountFields[0] )
+          setAmountField( amountFields[0] )
         }
         let addressField = fields.find(f=>isValidAddress(awards[0][f]))
         if(addressField)
@@ -60,9 +54,9 @@ function NewAirdrop({onBack}) {
   }, [files])
 
   useEffect(()=>{
-    if(!raw || !addressField || !amount0Field || !amount1Field) return
-    setData( merklize(raw, addressField, amount0Field, amount1Field, ["username"]) )
-  }, [raw, addressField, amount0Field, amount1Field])
+    if(!raw || !addressField || !amountField) return
+    setData( merklize(raw, addressField, amountField, ["username"]) )
+  }, [raw, addressField, amountField])
 
   useEffect(()=>{
     if(!data) return setHash()
@@ -86,6 +80,18 @@ function NewAirdrop({onBack}) {
   //   }
   // }
   // const providers = Object.keys(providerActions)
+  // return (
+  //   <React.Fragment>
+  //     <Bar>
+  //       <BackButton onClick={onBack} />
+  //     </Bar>
+  //     <Header>Create a new airdrop</Header>
+  //     {ipfs
+  //       ? <Info style={{"marginBottom": "10px"}}>ipfs node found</Info>
+  //       : <Info mode="error" style={{"marginBottom": "10px"}}>no local ipfs node found! please run a local ipfs node with api running on port 5001 so the airdrop data can be pinned.</Info>
+  //     }
+  //   </React.Fragment>
+  // )
 
   return (
     <React.Fragment>
@@ -95,7 +101,7 @@ function NewAirdrop({onBack}) {
       <Header>Create a new airdrop</Header>
       {ipfs
         ? <Info style={{"marginBottom": "10px"}}>ipfs node found</Info>
-        : <Info.Alert style={{"marginBottom": "10px"}}>no local ipfs node found! please run a local ipfs node with api running on port 5001 so the airdrop data can be pinned.</Info.Alert>
+        : <Info mode="error" style={{"marginBottom": "10px"}}>no local ipfs node found! please run a local ipfs node with api running on port 5001 so the airdrop data can be pinned.</Info>
       }
       <form ref={form} onSubmit={null}>
         <Field label="Load from csv:">
@@ -105,17 +111,16 @@ function NewAirdrop({onBack}) {
         {raw && raw[0] &&
         <Info style={{marginBottom: "10px"}}>
           {addressField ? `Address column: '${addressField}'` : `!No address column!`} <br/>
-          {amount0Field ? `First amount column: '${amount0Field}'` : `!No amount column!`} <br/>
-          {amount1Field !== amount0Field ? `Second amount column: '${amount1Field}'` : `No (optional) second amount column has been set. Both tokens will mint using '${amount0Field}'.`} <br/>
+          {amountField ? `Amount column: '${amountField}'` : `!No amount column!`} <br/>
           <Button size="mini" onClick={()=>setChangeFields(true)}>Change</Button>
         </Info>}
         {raw && raw[0] && !addressField &&
-        <Info.Alert style={{marginBottom: "10px"}}>
+        <Info mode="warning" style={{marginBottom: "10px"}}>
           No address column found, please choose the column that contains recipient addresses.
           <RadioGroup onChange={(field)=>setAddressField(field)} selected={addressField}>
             {Object.keys(raw[0]).map((field, i) => <label key={i}><Radio id={field} /> {field}</label>)}
           </RadioGroup>
-        </Info.Alert>}
+        </Info>}
         {raw && raw[0] && changeFields &&
         <React.Fragment>
           <Field label="Address column:">
@@ -123,28 +128,13 @@ function NewAirdrop({onBack}) {
               {Object.keys(raw[0]).map((field, i) => <label key={i}><Radio id={field} /> {field}</label>)}
             </RadioGroup>
           </Field>
-          <Field label="First amount column:">
-            <RadioGroup onChange={(field)=>setAmount0Field(field)} selected={amount0Field}>
-              {Object.keys(raw[0]).map((field, i) => <label key={i}><Radio id={field} /> {field}</label>)}
-            </RadioGroup>
-          </Field>
-          <Field label="Second amount column:">
-            <RadioGroup onChange={(field)=>setAmount1Field(field)} selected={amount1Field}>
+          <Field label="Amount column:">
+            <RadioGroup onChange={(field)=>setAmountField(field)} selected={amountField}>
               {Object.keys(raw[0]).map((field, i) => <label key={i}><Radio id={field} /> {field}</label>)}
             </RadioGroup>
           </Field>
         </React.Fragment>}
       </form>
-      {/*raw && !addressField &&
-      <Field>
-        <Info.Alert style={{marginBottom: "10px"}}>No address field detected. You can lookup addresses from a username field using the following providers:</Info.Alert>
-        <DropDown style={{marginRight: "1em"}} items={providers} selected={activeProviderIdx} onChange={(idx)=>setActiveProviderIdx(idx)} />
-        <Button onClick={()=>providerActions[providers[activeProviderIdx]](raw)}>Go</Button>
-      </Field>}
-      {doingLookup &&
-      <Field>
-        <Info style={{marginBottom: "10px"}}>Please wait for the address lookups to complete. {raw.length - count} left.</Info>
-      </Field>*/}
       {data && data.root && hash &&
       <React.Fragment>
         <Info style={{"marginBottom": "10px"}}>
@@ -182,10 +172,6 @@ async function download(data){
     document.body.removeChild(elem);
   }
 }
-// <Info style={{marginBottom: "10px"}}>csv amount field name is <strong>{amountField}</strong>. <Button onClick={()=>{}} size="mini">Change this</Button></Info>
-// {data && ( hash
-//   ? <Info style={{marginBottom: "10px"}}>You're data with merkle root ({data.root}) and ipfs hash ({hash}) has been added to ipfs but may need to propagate through the network if it doesn't already appear <a href={`https://ipfs.eth.aragon.network/ipfs/${hash}`} target="_blank">here</a>.</Info>
-//   : <Info.Alert style={{marginBottom: "10px"}}>no ipfs hash generated. missing ipfs node?</Info.Alert> )}
 
 async function addToIPFS(data){
   let ipfs = ipfsClient('/ip4/127.0.0.1/tcp/5001')

@@ -36,7 +36,7 @@
     {
       "constant": true,
       "inputs": [],
-      "name": "tokenManager1",
+      "name": "tokenManager",
       "outputs": [
         {
           "name": "",
@@ -92,20 +92,6 @@
         {
           "name": "dataURI",
           "type": "string"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "tokenManager0",
-      "outputs": [
-        {
-          "name": "",
-          "type": "address"
         }
       ],
       "payable": false,
@@ -283,12 +269,7 @@
         },
         {
           "indexed": false,
-          "name": "amount0",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "name": "amount1",
+          "name": "amount",
           "type": "uint256"
         }
       ],
@@ -348,11 +329,7 @@
       "constant": false,
       "inputs": [
         {
-          "name": "_tokenManager0",
-          "type": "address"
-        },
-        {
-          "name": "_tokenManager1",
+          "name": "_tokenManager",
           "type": "address"
         },
         {
@@ -400,11 +377,7 @@
           "type": "address"
         },
         {
-          "name": "_amount0",
-          "type": "uint256"
-        },
-        {
-          "name": "_amount1",
+          "name": "_amount",
           "type": "uint256"
         },
         {
@@ -430,11 +403,7 @@
           "type": "address"
         },
         {
-          "name": "_amount0s",
-          "type": "uint256[]"
-        },
-        {
-          "name": "_amount1s",
+          "name": "_amounts",
           "type": "uint256[]"
         },
         {
@@ -464,11 +433,7 @@
           "type": "address[]"
         },
         {
-          "name": "_amount0s",
-          "type": "uint256[]"
-        },
-        {
-          "name": "_amount1s",
+          "name": "_amounts",
           "type": "uint256[]"
         },
         {

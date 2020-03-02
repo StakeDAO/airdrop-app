@@ -12,24 +12,24 @@
   "environments": {
     "default": {
       "network": "development",
-      "appName": "airdrop-duo-app.open.aragonpm.eth"
+      "appName": "airdrop-app.open.aragonpm.eth"
     },
     "docker": {
       "network": "docker",
-      "appName": "airdrop-duo-app.open.aragonpm.eth"
+      "appName": "airdrop-app.open.aragonpm.eth"
     },
     "rinkeby": {
       "registry": "0x98df287b6c145399aaa709692c8d308357bc085d",
-      "appName": "airdrop-duo-app.open.aragonpm.eth",
+      "appName": "airdrop-app.open.aragonpm.eth",
       "wsRPC": "wss://rinkeby.eth.aragon.network/ws",
       "network": "rinkeby"
     },
     "mainnet": {
       "registry": "0x314159265dd8dbb310642f98f50c066173c1259b",
-      "appName": "airdrop-duo-app.open.aragonpm.eth",
+      "appName": "airdrop-app.open.aragonpm.eth",
       "wsRPC": "wss://mainnet.eth.aragon.network/ws",
       "network": "mainnet"
     }
   },
-  "path": "contracts/AirdropDuo.sol"
+  "path": "contracts/Airdrop.sol"
 }

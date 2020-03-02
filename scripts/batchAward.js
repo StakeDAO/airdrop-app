@@ -1,5 +1,5 @@
 const ethers = require('ethers');
-const AirdropDuoABI = require('../abi/AirdropDuo.json').abi
+const AirdropABI = require('../abi/Airdrop.json').abi
 const TokenABI = require('../abi/Token.json').abi
 const provider = new ethers.providers.Web3Provider(web3.currentProvider, 'mainnet')
 const { utils } = ethers;
@@ -16,7 +16,7 @@ const batchSize = 50
 
 async function main(){
   await ethereum.enable()
-  const airdropDuo = new ethers.Contract(airdropDuoAddress, AirdropDuoABI,  provider.getSigner())
+  const airdropDuo = new ethers.Contract(airdropDuoAddress, AirdropABI,  provider.getSigner())
 
   let airdrop = await airdropDuo.airdrops(id)
   let hash = airdrop.dataURI.split(":")[1]
@@ -24,11 +24,11 @@ async function main(){
 
   console.log(awards)
 
-  let idx = 0, recipients = [], amount0s = [], amount1s = [], proofLengths = [], proofs = "0x"
+  let idx = 0, recipients = [], amounts = [], proofLengths = [], proofs = "0x"
   while (recipients.length < batchSize && idx < awards.length){
     let award = awards[idx++]
 
-    // let valid = await airdropDuo.validate(airdrop.root, award.proof, solidityKeccak256(["address", "uint256", "uint256"],[award.address, award.amount0, award.amount1]))
+    // let valid = await airdropDuo.validate(airdrop.root, award.proof, solidityKeccak256(["address", "uint256", "uint256"],[award.address, award.amount, award.amount1]))
     // console.log(valid)
     let awarded = await airdropDuo.awarded(1, award.address)
     // console.log("here", awarded, award.username)
@@ -38,15 +38,14 @@ async function main(){
       continue
 
     recipients.push(award.address)
-    amount0s.push(award.amount0)
-    amount1s.push(award.amount1)
+    amounts.push(award.amount)
     proofs += award.proof.map(p=>p.slice(2)).join("")
     proofLengths.push(award.proof.length)
   }
 
   console.log(recipients.length)
   if(recipients.length)
-    await airdropDuo.awardToMany(id, recipients, amount0s, amount1s, proofs, proofLengths, {
+    await airdropDuo.awardToMany(id, recipients, amounts, proofs, proofLengths, {
         // The price (in wei) per unit of gas
         gasLimit: 9500000,
         gasPrice: parseUnits("3.0", 'gwei')
