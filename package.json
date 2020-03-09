@@ -22,11 +22,12 @@
 		"react-dom": "^16.8.6",
 		"regenerator-runtime": "^0.13.2",
 		"rxjs": "^6.5.2",
-		"styled-components": "^4.3.2"
+		"styled-components": "^4.3.2",
+		"truffle": "^5.1.4"
 	},
 	"devDependencies": {
 		"@aragon/apps-shared-migrations": "^1.0.0",
-		"@aragon/cli": "^6.2.6",
+		"@aragon/cli": "7.0.3",
 		"@aragon/test-helpers": "^1.1.0",
 		"@babel/core": "^7.6.0",
 		"@babel/plugin-proposal-class-properties": "^7.5.5",

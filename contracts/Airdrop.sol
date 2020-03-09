@@ -2,6 +2,9 @@ pragma solidity ^0.4.24;
 
 import "@aragon/os/contracts/apps/AragonApp.sol";
 import "@aragon/apps-token-manager/contracts/TokenManager.sol";
+import "@aragon/apps-agent/contracts/Agent.sol";
+
+import "./ICycleManager.sol";
 
 contract Airdrop is AragonApp {
 
@@ -16,8 +19,11 @@ contract Airdrop is AragonApp {
     event Award(uint id, address recipient, uint amount);
 
     /// State
-    mapping(uint => Airdrop) public airdrops;
+    Agent public agent;
+    ICycleManager public cycleManager;
     TokenManager public tokenManager;
+
+    mapping(uint => Airdrop) public airdrops;
     uint public airdropsCount;
 
     /// ACL
@@ -27,10 +33,12 @@ contract Airdrop is AragonApp {
     string private constant ERROR_AWARDED = "AWARDED";
     string private constant ERROR_INVALID = "INVALID";
 
-    function initialize(address _tokenManager, bytes32 _root, string _dataURI) onlyInit public {
+    function initialize(Agent _agent, ICycleManager _cycleManager, TokenManager _tokenManager, bytes32 _root, string _dataURI) onlyInit public {
         initialized();
 
-        tokenManager = TokenManager(_tokenManager);
+        agent = _agent;
+        cycleManager = _cycleManager;
+        tokenManager = _tokenManager;
 
         if(_root != bytes32(0) && bytes(_dataURI).length != 0)
           _start(_root, _dataURI);
@@ -52,7 +60,7 @@ contract Airdrop is AragonApp {
     }
 
     /**
-     * @notice Award from airdrop
+     * @notice Claim single award
      * @param _id Airdrop id
      * @param _recipient Recepient of award
      * @param _amount The token amount
@@ -74,7 +82,7 @@ contract Airdrop is AragonApp {
     }
 
     /**
-     * @notice Award from airdrop
+     * @notice Claim multiple awards
      * @param _ids Airdrop ids
      * @param _recipient Recepient of award
      * @param _amounts The token amounts
@@ -110,7 +118,7 @@ contract Airdrop is AragonApp {
     }
 
     /**
-     * @notice Award from airdrop
+     * @notice Claim awards on behalf of recipients
      * @param _id Airdrop ids
      * @param _recipients Recepients of award
      * @param _amounts The token amounts

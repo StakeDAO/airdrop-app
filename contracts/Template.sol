@@ -19,7 +19,10 @@ import "@aragon/os/contracts/apm/APMNamehash.sol";
 import "@aragon/apps-token-manager/contracts/TokenManager.sol";
 import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
 import "@daonuts/token/contracts/Token.sol";
+import "@aragon/apps-agent/contracts/Agent.sol";
+import "@aragon/apps-finance/contracts/Finance.sol";
 
+import "./ICycleManager.sol";
 import "./Airdrop.sol";
 
 
@@ -71,6 +74,10 @@ contract Template is TemplateBase {
 
         Airdrop airdrop = Airdrop(dao.newAppInstance(airdropAppId, latestVersionAppBase(airdropAppId)));
         TokenManager tokenManager = TokenManager(dao.newAppInstance(tokenManagerAppId, latestVersionAppBase(tokenManagerAppId)));
+        ICycleManager cycleManager = _setupCycleManager(dao, acl);
+        Agent agent = _setupAgent(dao, acl);
+        acl.createPermission(ANY_ENTITY, agent, agent.TRANSFER_ROLE(), ANY_ENTITY);
+        Finance finance = _setupFinance(dao, acl, agent);
 
         Token token = new Token("Token", 18, "TOKEN", false);
         token.changeController(tokenManager);
@@ -81,7 +88,7 @@ contract Template is TemplateBase {
         /* bytes32 root = 0x3e2cfb838b2ad1503bf79a4391e990a014b1eaf20f5de80ac5e441b8ee6e90e4; */
         /* string memory dataURI = "ipfs:QmQJa54XQwEPeyPvUg2bCKZD6AK98hMB4zU4gU1EgpQG4P"; */
         /* airdrop.initialize(tokenManager, root, dataURI); */
-        airdrop.initialize(tokenManager, bytes32(0), "");
+        airdrop.initialize(agent, cycleManager, tokenManager, bytes32(0), "");
         emit InstalledApp(airdrop, airdropAppId);
 
         acl.createPermission(msg.sender, tokenManager, tokenManager.BURN_ROLE(), msg.sender);
@@ -105,6 +112,33 @@ contract Template is TemplateBase {
         acl.setPermissionManager(msg.sender, acl, acl.CREATE_PERMISSIONS_ROLE());
 
         emit DeployDao(dao);
+    }
+
+    function _setupAgent(Kernel _dao, ACL _acl) internal returns (Agent) {
+        bytes32 appId = apmNamehash("agent");
+        return Agent(_dao.newAppInstance(appId, latestVersionAppBase(appId)));
+    }
+
+    function _setupFinance(Kernel _dao, ACL _acl, Agent _agent) internal returns (Finance) {
+        bytes32 appId = apmNamehash("finance");
+        Finance finance = Finance(_dao.newAppInstance(appId, latestVersionAppBase(appId)));
+        finance.initialize(_agent, uint64(1 days));
+
+        _acl.createPermission(ANY_ENTITY, finance, finance.CREATE_PAYMENTS_ROLE(), ANY_ENTITY);
+
+        return finance;
+    }
+
+    function _setupCycleManager(Kernel _dao, ACL _acl) internal returns (ICycleManager) {
+        bytes32 appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("cycle-manager")));
+        bytes memory initializeData = abi.encodeWithSelector(ICycleManager(0).initialize.selector, 60);
+        address latestBaseAppAddress = latestVersionAppBase(appId);
+        ICycleManager cycleManager = ICycleManager(_dao.newAppInstance(appId, latestBaseAppAddress, initializeData, false));
+
+        _acl.createPermission(ANY_ENTITY, cycleManager, cycleManager.UPDATE_CYCLE_ROLE(), ANY_ENTITY);
+        _acl.createPermission(ANY_ENTITY, cycleManager, cycleManager.START_CYCLE_ROLE(), ANY_ENTITY);
+
+        return cycleManager;
     }
 
 }

@@ -2,6 +2,9 @@ import 'core-js/stable'
 import 'regenerator-runtime/runtime'
 import AragonApi from '@aragon/api'
 
+const DEBUG = true;
+const debugLog = async (message) => {if (DEBUG) {console.log(message)}}
+
 const api = new AragonApi()
 let account
 
@@ -17,10 +20,12 @@ api.store(
         newState = state
         break
       case 'Start':
+        debugLog("START EVENT")
         let airdrop = await marshalAirdrop(parseInt(event.returnValues.id))
         newState = { ...state, rawAirdrops: [airdrop].concat(state.rawAirdrops || []) }
         break
       case 'Award':
+        debugLog("AWARD")
         const {id, recipient} = event.returnValues
         newState = { ...state }
         break
