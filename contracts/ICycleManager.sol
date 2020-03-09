@@ -6,6 +6,7 @@ contract ICycleManager {
     bytes32 constant public START_CYCLE_ROLE = keccak256("START_CYCLE_ROLE");
 
     uint256 public cycleLength;
+    uint256 public currentCycle;
 
     function initialize(uint256 _cycleLength) public;
 

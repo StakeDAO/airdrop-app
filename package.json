@@ -40,7 +40,7 @@
 		"start": "aragon run",
 		"start:template": "npm run start -- --template Template --template-init @ARAGON_ENS --files dist",
 		"start:http": "aragon run --http localhost:1234 --http-served-from ./dist",
-		"start:http:template": "npm run start:http -- --template Template --template-init @ARAGON_ENS",
+		"start:http:template": "npm run start:http -- --template Template --template-init @ARAGON_ENS 0x85e74AD022E16fae4ed7c257370E19617d9A1A85",
 		"test": "aragon contracts test",
 		"compile": "aragon contracts compile",
 		"sync-assets": "copy-aragon-ui-assets -n aragon-ui ./dist && rsync -rtu ./app/public/ ./dist",

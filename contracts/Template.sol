@@ -16,7 +16,6 @@ import "@aragon/os/contracts/lib/ens/ENS.sol";
 import "@aragon/os/contracts/lib/ens/PublicResolver.sol";
 import "@aragon/os/contracts/apm/APMNamehash.sol";
 
-import "@aragon/apps-token-manager/contracts/TokenManager.sol";
 import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
 import "@daonuts/token/contracts/Token.sol";
 import "@aragon/apps-agent/contracts/Agent.sol";
@@ -59,9 +58,11 @@ contract Template is TemplateBase {
 
     uint64 constant PCT = 10 ** 16;
     address constant ANY_ENTITY = address(-1);
+    address public sctAddress;
 
-    constructor(ENS ens) TemplateBase(DAOFactory(0), ens) public {
+    constructor(ENS ens, address _sctAddress) TemplateBase(DAOFactory(0), ens) public {
         /* tokenFactory = new MiniMeTokenFactory(); */
+        sctAddress = _sctAddress;
     }
 
     function newInstance() public {
@@ -70,38 +71,24 @@ contract Template is TemplateBase {
         acl.createPermission(this, dao, dao.APP_MANAGER_ROLE(), this);
 
         bytes32 airdropAppId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("airdrop-app")));
-        bytes32 tokenManagerAppId = apmNamehash("token-manager");
 
         Airdrop airdrop = Airdrop(dao.newAppInstance(airdropAppId, latestVersionAppBase(airdropAppId)));
-        TokenManager tokenManager = TokenManager(dao.newAppInstance(tokenManagerAppId, latestVersionAppBase(tokenManagerAppId)));
         ICycleManager cycleManager = _setupCycleManager(dao, acl);
         Agent agent = _setupAgent(dao, acl);
-        acl.createPermission(ANY_ENTITY, agent, agent.TRANSFER_ROLE(), ANY_ENTITY);
         Finance finance = _setupFinance(dao, acl, agent);
 
-        Token token = new Token("Token", 18, "TOKEN", false);
-        token.changeController(tokenManager);
+//        Token token = new Token("Token", 18, "TOKEN", false);
 
         // Initialize apps
-        tokenManager.initialize(MiniMeToken(token), false, 0);
-        emit InstalledApp(tokenManager, tokenManagerAppId);
         /* bytes32 root = 0x3e2cfb838b2ad1503bf79a4391e990a014b1eaf20f5de80ac5e441b8ee6e90e4; */
         /* string memory dataURI = "ipfs:QmQJa54XQwEPeyPvUg2bCKZD6AK98hMB4zU4gU1EgpQG4P"; */
         /* airdrop.initialize(tokenManager, root, dataURI); */
-        airdrop.initialize(agent, cycleManager, tokenManager, bytes32(0), "");
+        airdrop.initialize(agent, cycleManager, sctAddress, bytes32(0), "");
         emit InstalledApp(airdrop, airdropAppId);
 
-        acl.createPermission(msg.sender, tokenManager, tokenManager.BURN_ROLE(), msg.sender);
         acl.createPermission(msg.sender, airdrop, airdrop.START_ROLE(), msg.sender);
-        acl.createPermission(this, tokenManager, tokenManager.MINT_ROLE(), this);
-
-        tokenManager.mint(msg.sender, 100000 * 10**18); // Give 1 token to each holder
 
         // Clean up permissions
-
-        acl.grantPermission(airdrop, tokenManager, tokenManager.MINT_ROLE());
-        acl.revokePermission(this, tokenManager, tokenManager.MINT_ROLE());
-        acl.setPermissionManager(msg.sender, tokenManager, tokenManager.MINT_ROLE());
 
         acl.grantPermission(msg.sender, dao, dao.APP_MANAGER_ROLE());
         acl.revokePermission(this, dao, dao.APP_MANAGER_ROLE());
@@ -116,7 +103,12 @@ contract Template is TemplateBase {
 
     function _setupAgent(Kernel _dao, ACL _acl) internal returns (Agent) {
         bytes32 appId = apmNamehash("agent");
-        return Agent(_dao.newAppInstance(appId, latestVersionAppBase(appId)));
+        Agent agent = Agent(_dao.newAppInstance(appId, latestVersionAppBase(appId)));
+        agent.initialize();
+
+        _acl.createPermission(ANY_ENTITY, agent, agent.TRANSFER_ROLE(), ANY_ENTITY);
+
+        return agent;
     }
 
     function _setupFinance(Kernel _dao, ACL _acl, Agent _agent) internal returns (Finance) {

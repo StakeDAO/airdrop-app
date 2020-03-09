@@ -1,7 +1,6 @@
 pragma solidity ^0.4.24;
 
 import "@aragon/os/contracts/apps/AragonApp.sol";
-import "@aragon/apps-token-manager/contracts/TokenManager.sol";
 import "@aragon/apps-agent/contracts/Agent.sol";
 
 import "./ICycleManager.sol";
@@ -21,10 +20,11 @@ contract Airdrop is AragonApp {
     /// State
     Agent public agent;
     ICycleManager public cycleManager;
-    TokenManager public tokenManager;
+    address public sctAddress;
 
     mapping(uint => Airdrop) public airdrops;
-    uint public airdropsCount;
+    uint256 public airdropsCount;
+    uint256 public lastRewardCycle;
 
     /// ACL
     bytes32 constant public START_ROLE = keccak256("START_ROLE");
@@ -32,16 +32,18 @@ contract Airdrop is AragonApp {
     // Errors
     string private constant ERROR_AWARDED = "AWARDED";
     string private constant ERROR_INVALID = "INVALID";
+    string private constant ERROR_CYCLE_NOT_ENDED = "CYCLE_NOT_ENDED";
 
-    function initialize(Agent _agent, ICycleManager _cycleManager, TokenManager _tokenManager, bytes32 _root, string _dataURI) onlyInit public {
+    function initialize(Agent _agent, ICycleManager _cycleManager, address _sctAddress, bytes32 _root, string _dataURI) onlyInit public {
         initialized();
 
         agent = _agent;
         cycleManager = _cycleManager;
-        tokenManager = _tokenManager;
+        sctAddress = _sctAddress;
 
-        if(_root != bytes32(0) && bytes(_dataURI).length != 0)
-          _start(_root, _dataURI);
+        if (_root != bytes32(0) && bytes(_dataURI).length != 0) {
+            _start(_root, _dataURI);
+        }
     }
 
     /**
@@ -53,7 +55,10 @@ contract Airdrop is AragonApp {
         _start(_root, _dataURI);
     }
 
-    function _start(bytes32 _root, string _dataURI) internal returns(uint id){
+    function _start(bytes32 _root, string _dataURI) internal returns(uint id) {
+        require(cycleManager.currentCycle() > lastRewardCycle, ERROR_CYCLE_NOT_ENDED);
+        lastRewardCycle = cycleManager.currentCycle();
+
         id = ++airdropsCount;    // start at 1
         airdrops[id] = Airdrop(_root, _dataURI);
         emit Start(id);
@@ -76,7 +81,7 @@ contract Airdrop is AragonApp {
 
         airdrops[_id].awarded[_recipient] = true;
 
-        tokenManager.mint(_recipient, _amount);
+        agent.transfer(sctAddress, _recipient, _amount);
 
         emit Award(_id, _recipient, _amount);
     }
@@ -113,8 +118,7 @@ contract Airdrop is AragonApp {
             emit Award(id, _recipient, _amounts[i]);
         }
 
-        tokenManager.mint(_recipient, totalAmount);
-
+        agent.transfer(sctAddress, _recipient, totalAmount);
     }
 
     /**
@@ -144,7 +148,7 @@ contract Airdrop is AragonApp {
 
             airdrops[_id].awarded[recipient] = true;
 
-            tokenManager.mint(recipient, _amounts[i]);
+            agent.transfer(sctAddress, recipient, _amounts[i]);
 
             emit Award(_id, recipient, _amounts[i]);
         }
