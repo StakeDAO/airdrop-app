@@ -70,23 +70,12 @@ contract Template is TemplateBase {
         ACL acl = ACL(dao.acl());
         acl.createPermission(this, dao, dao.APP_MANAGER_ROLE(), this);
 
-        bytes32 airdropAppId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("airdrop-app")));
-
-        Airdrop airdrop = Airdrop(dao.newAppInstance(airdropAppId, latestVersionAppBase(airdropAppId)));
         ICycleManager cycleManager = _setupCycleManager(dao, acl);
         Agent agent = _setupAgent(dao, acl);
         Finance finance = _setupFinance(dao, acl, agent);
+        Airdrop airdrop = _setupAirdop(dao, acl, agent, cycleManager, sctAddress);
 
 //        Token token = new Token("Token", 18, "TOKEN", false);
-
-        // Initialize apps
-        /* bytes32 root = 0x3e2cfb838b2ad1503bf79a4391e990a014b1eaf20f5de80ac5e441b8ee6e90e4; */
-        /* string memory dataURI = "ipfs:QmQJa54XQwEPeyPvUg2bCKZD6AK98hMB4zU4gU1EgpQG4P"; */
-        /* airdrop.initialize(tokenManager, root, dataURI); */
-        airdrop.initialize(agent, cycleManager, sctAddress, bytes32(0), "");
-        emit InstalledApp(airdrop, airdropAppId);
-
-        acl.createPermission(msg.sender, airdrop, airdrop.START_ROLE(), msg.sender);
 
         // Clean up permissions
 
@@ -99,6 +88,17 @@ contract Template is TemplateBase {
         acl.setPermissionManager(msg.sender, acl, acl.CREATE_PERMISSIONS_ROLE());
 
         emit DeployDao(dao);
+    }
+
+    function _setupAirdop(Kernel _dao, ACL _acl, Agent _agent, ICycleManager _cycleManager, address _sctAddress) internal returns (Airdrop) {
+        bytes32 airdropAppId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("airdrop-app-sc")));
+        Airdrop airdrop = Airdrop(_dao.newAppInstance(airdropAppId, latestVersionAppBase(airdropAppId)));
+        airdrop.initialize(_agent, _cycleManager, _sctAddress, bytes32(0), "");
+        emit InstalledApp(airdrop, airdropAppId);
+
+        _acl.createPermission(msg.sender, airdrop, airdrop.START_ROLE(), msg.sender);
+
+        return airdrop;
     }
 
     function _setupAgent(Kernel _dao, ACL _acl) internal returns (Agent) {
