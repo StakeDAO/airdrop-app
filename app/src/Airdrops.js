@@ -8,6 +8,7 @@ import BigNumber from 'bignumber.js'
 
 function Airdrops({airdrops, onSelect}){
 
+  const { api, connectedAccount } = useAragonApi()
 
   const [retrieving, setRetrieving] = useState([])
   const [ready, setReady] = useState([])
@@ -17,6 +18,20 @@ function Airdrops({airdrops, onSelect}){
     setReady( airdrops.filter(a=>(a.data && !a.awarded && a.userData)) )
     setArchived( airdrops.filter(a=>(a.data && (a.awarded || !a.userData))) )
   },[airdrops])
+
+  const claimAllAwards = (event) => {
+    event.stopPropagation()
+
+    const ids = ready.map(award => award.id)
+    const amounts = ready.map(award => award.userData.amount)
+    const proofs = ready
+      .map(award => award.userData.proof)
+      .reduce((allProofs, awardProofs) => allProofs.concat(awardProofs))
+      .reduce((proofsString, proof) => proofsString.concat(proof.slice(2)))
+    const proofLengths = ready.map(award => award.userData.proof.length)
+
+    api.awardFromMany(ids, connectedAccount, amounts, proofs, proofLengths).toPromise()
+  }
 
   return (
     <React.Fragment>
@@ -33,9 +48,17 @@ function Airdrops({airdrops, onSelect}){
         <CardLayout columnWidthMin={30 * GU} rowHeight={250}>
           {ready.map((d, i)=><AirdropCard {...d} key={d.id} onSelect={onSelect} />)}
         </CardLayout>
+
+        {ready.length > 1 ?
+        < Button mode="strong" emphasis="positive" onClick={(event) => claimAllAwards(event)}>
+          Claim All Awards
+          </Button> : null
+        }
+
       </section> : null}
       {archived.length ?
-      <section>
+      <section css={`
+          margin-top: 30px;`}>
         <h2 size="xlarge">Archive:</h2>
         <CardLayout columnWidthMin={30 * GU} rowHeight={150}>
           {archived.map((d, i)=><AirdropCard {...d} key={d.id} onSelect={onSelect} />)}
@@ -70,7 +93,7 @@ function AirdropCard({id, root, dataURI, data, awarded, userData, onSelect}) {
         {awarded &&
         <Info style={{marginBottom: "10px"}}>You were awarded</Info>}
         {!awarded && userData &&
-        <Info style={{marginBottom: "10px"}}>You can claim <br/>{BigNumber(userData.amount).div("1e+18").toFixed()}}</Info>}
+        <Info style={{marginBottom: "10px"}}>You can claim <br/>{BigNumber(userData.amount).div("1e+18").toFixed()}</Info>}
       </section>
       <footer style={{display: "flex", justifyContent: "flex-end"}}>
         {!awarded && userData &&

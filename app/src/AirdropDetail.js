@@ -45,7 +45,6 @@ async function awardToMany(api, id, awards, batchSize){
   while (recipients.length < batchSize && idx < awards.length){
     let award = awards[idx++]
     let awarded = await api.call('awarded', id, award.address).toPromise()
-    console.log("here", awarded)
     if(awarded)
       continue
 
@@ -55,9 +54,10 @@ async function awardToMany(api, id, awards, batchSize){
     proofLengths.push(award.proof.length)
   }
 
-  console.log(recipients.length)
-  if(recipients.length)
+  console.log("Recipients awarded: ", recipients.length)
+  if(recipients.length) {
     await api.awardToMany(id, recipients, amounts, proofs, proofLengths).toPromise()
+  }
 }
 
 export default Airdrop

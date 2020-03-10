@@ -94,7 +94,7 @@ contract Airdrop is AragonApp {
      * @param _proofs Merkle proofs
      * @param _proofLengths Merkle proof lengths
      */
-    function awardFromMany(uint[] _ids, address _recipient, uint[] _amounts, bytes _proofs, uint[] _proofLengths) public {
+    function awardFromMany(uint256[] _ids, address _recipient, uint256[] _amounts, bytes _proofs, uint256[] _proofLengths) public {
 
         uint256 totalAmount;
 
@@ -129,7 +129,7 @@ contract Airdrop is AragonApp {
      * @param _proofs Merkle proofs
      * @param _proofLengths Merkle proof lengths
      */
-    function awardToMany(uint256 _id, address[] _recipients, uint[] _amounts, bytes _proofs, uint[] _proofLengths) public {
+    function awardToMany(uint256 _id, address[] _recipients, uint256[] _amounts, bytes _proofs, uint256[] _proofLengths) public {
 
         uint256 marker = 32;
 
